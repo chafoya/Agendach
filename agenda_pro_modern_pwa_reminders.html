@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="es" class="dark h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>NEXUS - Agenda & Recordatorios Inteligentes</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#312e81',
+              neon: '#00f0ff'
+            },
+            dark: {
+              bg: '#07090e',
+              surface: '#0f1420',
+              card: '#161d2f',
+              border: '#26334d'
+            }
+          },
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif']
+          },
+          boxShadow: {
+            'neon-indigo': '0 0 25px -5px rgba(99, 102, 241, 0.4)',
+            'neon-cyan': '0 0 25px -5px rgba(0, 240, 255, 0.4)',
+            'neon-rose': '0 0 25px -5px rgba(244, 63, 94, 0.4)'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #07090e;
+      color: #f1f5f9;
+      user-select: none;
+    }
+    
+    /* Modern Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f1420;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #26334d;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #6366f1;
+    }
+
+    /* Glassmorphism utility */
+    .glass-panel {
+      background: rgba(15, 20, 32, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .glass-card {
+      background: rgba(22, 29, 47, 0.6);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .glass-card:hover {
+      border-color: rgba(99, 102, 241, 0.4);
+    }
+
+    /* Pulse Glow Animation */
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(1.05); }
+    }
+    .animate-pulse-glow {
+      animation: pulseGlow 4s infinite ease-in-out;
+    }
+  </style>
+</head>
+
+<body class="h-full overflow-x-hidden flex flex-col bg-[#07090e] text-slate-100">
+
+  <div class="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+    <div class="absolute -top-40 -left-40 w-96 h-96 bg-brand-600/20 rounded-full blur-[128px] animate-pulse-glow"></div>
+    <div class="absolute top-1/3 -right-40 w-96 h-96 bg-cyan-500/15 rounded-full blur-[128px] animate-pulse-glow" style="animation-delay: 2s;"></div>
+    <div class="absolute -bottom-40 left-1/3 w-96 h-96 bg-rose-500/10 rounded-full blur-[128px] animate-pulse-glow" style="animation-delay: 1s;"></div>
+  </div>
+
+  <header class="sticky top-0 z-30 glass-panel border-b border-slate-800/80 px-4 lg:px-8 py-3.5">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      
+      <!-- Brand & Status -->
+      <div class="flex items-center gap-3">
+        <div class="relative flex items-center justify-center w-11 h-11 rounded-2xl bg-gradient-to-tr from-brand-600 to-cyan-400 p-0.5 shadow-neon-indigo">
+          <div class="w-full h-full bg-dark-bg rounded-[14px] flex items-center justify-center">
+            <i data-lucide="zap" class="w-6 h-6 text-cyan-400"></i>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-extrabold text-xl tracking-tight bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent">
+              NEXUS
+            </span>
+            <span class="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30">
+              PWA v2.5
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 hidden sm:block">Agenda & Recordatorios en Tiempo Real</p>
+        </div>
+      </div>
+
+      <!-- Realtime Clock Display -->
+      <div class="hidden md:flex items-center gap-3 bg-dark-surface/80 border border-slate-800 px-4 py-2 rounded-xl text-center">
+        <i data-lucide="clock" class="w-4 h-4 text-brand-400 animate-pulse"></i>
+        <span id="live-clock" class="font-mono text-sm font-semibold tracking-wider text-slate-200">00:00:00</span>
+        <span class="text-slate-600">|</span>
+        <span id="live-date" class="text-xs text-slate-400 font-medium">---, -- ---</span>
+      </div>
+
+      <!-- Actions Header -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- Notification Permission Button -->
+        <button id="btn-notifications" onclick="requestNotificationPermission()" 
+                class="relative flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-xs font-semibold text-slate-300 transition-all border border-slate-700/60">
+          <i data-lucide="bell" id="bell-icon" class="w-4 h-4 text-amber-400"></i>
+          <span id="notif-status-text" class="hidden sm:inline">Activar Alerts</span>
+          <span id="notif-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+        </button>
+
+        <!-- Install APK/PWA Button -->
+        <button id="btn-install-pwa" onclick="triggerPWAInstall()" 
+                class="hidden flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-500/20 to-brand-500/20 hover:from-cyan-500/30 hover:to-brand-500/30 text-xs font-bold text-cyan-300 border border-cyan-500/40 shadow-neon-cyan transition-all">
+          <i data-lucide="download" class="w-4 h-4"></i>
+          <span>Instalar App</span>
+        </button>
+
+        <!-- Help/Info Modal Trigger -->
+        <button onclick="toggleModal('modal-pwa-info', true)" class="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition">
+          <i data-lucide="help-circle" class="w-4 h-4"></i>
+        </button>
+
+        <!-- New Task Button -->
+        <button onclick="openTaskModal()" 
+                class="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-cyan-500 text-white font-bold text-xs sm:text-sm shadow-neon-indigo transition-all transform hover:scale-[1.02] active:scale-95">
+          <i data-lucide="plus-circle" class="w-4.5 h-4.5"></i>
+          <span class="hidden sm:inline">Nuevo Recordatorio</span>
+          <span class="sm:hidden">Nuevo</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <aside class="lg:col-span-4 xl:col-span-3 space-y-6">
+      
+      <!-- Quick Stats Card -->
+      <div class="glass-panel rounded-2xl p-5 space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+            <i data-lucide="activity" class="w-4 h-4 text-cyan-400"></i> Resumen de Hoy
+          </h3>
+          <span id="stats-completion-rate" class="text-xs font-extrabold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">0%</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-dark-surface/60 border border-slate-800 rounded-xl p-3">
+            <p class="text-[11px] font-semibold text-slate-400">Pendientes</p>
+            <p id="stat-pending-count" class="text-2xl font-black text-amber-400 mt-1">0</p>
+          </div>
+          <div class="bg-dark-surface/60 border border-slate-800 rounded-xl p-3">
+            <p class="text-[11px] font-semibold text-slate-400">Completados</p>
+            <p id="stat-completed-count" class="text-2xl font-black text-emerald-400 mt-1">0</p>
+          </div>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="space-y-1.5">
+          <div class="flex justify-between text-xs font-medium text-slate-400">
+            <span>Progreso diario</span>
+            <span id="stat-progress-text">0 / 0</span>
+          </div>
+          <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+            <div id="stat-progress-bar" class="bg-gradient-to-r from-brand-500 to-cyan-400 h-full w-0 transition-all duration-500"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Category Filter list -->
+      <div class="glass-panel rounded-2xl p-5 space-y-3">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+          <i data-lucide="filter" class="w-4 h-4 text-brand-400"></i> Categorías
+        </h3>
+        
+        <div class="space-y-1 text-sm font-medium" id="category-filters-container">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+
+      <!-- Priority Filter Pills -->
+      <div class="glass-panel rounded-2xl p-5 space-y-3">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+          <i data-lucide="shield-alert" class="w-4 h-4 text-rose-400"></i> Prioridad
+        </h3>
+        <div class="flex flex-wrap gap-2" id="priority-filters">
+          <button onclick="setPriorityFilter('all')" data-priority="all" class="priority-btn active px-3 py-1.5 rounded-xl text-xs font-semibold bg-brand-600 text-white border border-brand-500">Todas</button>
+          <button onclick="setPriorityFilter('alta')" data-priority="alta" class="priority-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20">Alta</button>
+          <button onclick="setPriorityFilter('media')" data-priority="media" class="priority-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20">Media</button>
+          <button onclick="setPriorityFilter('baja')" data-priority="baja" class="priority-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20">Baja</button>
+        </div>
+      </div>
+
+      <!-- Mini Interactive Calendar Module -->
+      <div class="glass-panel rounded-2xl p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 id="calendar-month-year" class="text-xs font-bold uppercase tracking-wider text-slate-200">
+            Cargando...
+          </h3>
+          <div class="flex items-center gap-1">
+            <button onclick="changeCalendarMonth(-1)" class="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white">
+              <i data-lucide="chevron-left" class="w-4 h-4"></i>
+            </button>
+            <button onclick="changeCalendarMonth(1)" class="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white">
+              <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+        <div class="grid grid-cols-7 text-center text-[11px] font-bold text-slate-500 mb-1">
+          <span>D</span><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span>
+        </div>
+        <div id="mini-calendar-grid" class="grid grid-cols-7 gap-1 text-xs">
+          <!-- Dynamic days populated here -->
+        </div>
+      </div>
+
+    </aside>
+
+    <section class="lg:col-span-8 xl:col-span-9 space-y-6">
+
+      <!-- Navigation Tabs & Search bar -->
+      <div class="glass-panel p-3 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+        
+        <!-- Tab selector -->
+        <div class="flex items-center p-1 bg-dark-bg/80 rounded-xl border border-slate-800 w-full sm:w-auto">
+          <button onclick="switchTab('today')" id="tab-today" class="tab-btn active flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 bg-brand-600 text-white shadow-md">
+            <i data-lucide="calendar" class="w-4 h-4"></i> Hoy
+          </button>
+          <button onclick="switchTab('upcoming')" id="tab-upcoming" class="tab-btn flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200">
+            <i data-lucide="clock" class="w-4 h-4"></i> Próximos
+          </button>
+          <button onclick="switchTab('all')" id="tab-all" class="tab-btn flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200">
+            <i data-lucide="layers" class="w-4 h-4"></i> Todos
+          </button>
+        </div>
+
+        <!-- Search input -->
+        <div class="relative w-full sm:w-64">
+          <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+          <input type="text" id="search-input" oninput="onSearchChange()" placeholder="Buscar recordatorios..." 
+                 class="w-full bg-dark-bg/80 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-500 transition" />
+        </div>
+      </div>
+
+      <!-- Urgent / Due Soon Alert Banner -->
+      <div id="urgent-alert-banner" class="hidden rounded-2xl bg-gradient-to-r from-rose-900/40 via-amber-900/30 to-rose-900/40 border border-rose-500/40 p-4 shadow-neon-rose">
+        <div class="flex items-start sm:items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="p-2 bg-rose-500/20 text-rose-400 rounded-xl animate-bounce">
+              <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h4 class="text-xs font-bold uppercase tracking-wider text-rose-300">¡Recordatorio Inminente!</h4>
+              <p id="urgent-alert-text" class="text-sm font-semibold text-slate-200">Tienes tareas pendientes en los próximos minutos.</p>
+            </div>
+          </div>
+          <button onclick="dismissUrgentBanner()" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/40 border border-rose-500/30 transition">
+            Entendido
+          </button>
+        </div>
+      </div>
+
+      <!-- Task Items Container -->
+      <div id="tasks-container" class="space-y-3">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Empty State View -->
+      <div id="empty-state" class="hidden glass-panel rounded-3xl p-12 text-center space-y-4">
+        <div class="w-20 h-20 mx-auto rounded-3xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400">
+          <i data-lucide="check-circle-2" class="w-10 h-10"></i>
+        </div>
+        <div class="max-w-md mx-auto">
+          <h3 class="text-lg font-extrabold text-slate-200">¡Todo al día y despejado!</h3>
+          <p class="text-xs text-slate-400 mt-1">No tienes recordatorios pendientes en este filtro. Haz clic abajo para agregar un evento o tarea a tu agenda.</p>
+        </div>
+        <button onclick="openTaskModal()" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-cyan-500 text-white text-xs font-bold shadow-neon-indigo hover:scale-105 transition">
+          <i data-lucide="plus-circle" class="w-4 h-4"></i> Crear Recordatorio
+        </button>
+      </div>
+
+    </section>
+
+  </main>
+
+  <div id="modal-task" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md hidden transition-all duration-300">
+    <div class="glass-panel w-full max-w-lg rounded-3xl border border-slate-700/80 p-6 sm:p-8 space-y-6 shadow-2xl relative transform transition-all scale-95 opacity-0" id="modal-task-content">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div class="flex items-center gap-3">
+          <div class="p-2.5 bg-brand-600/20 text-brand-400 rounded-2xl border border-brand-500/30">
+            <i data-lucide="calendar-plus" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h3 id="modal-task-title" class="text-lg font-bold text-white">Nuevo Recordatorio</h3>
+            <p class="text-xs text-slate-400">Configura la alerta y hora de notificación</p>
+          </div>
+        </div>
+        <button onclick="toggleModal('modal-task', false)" class="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Task Form -->
+      <form id="form-task" onsubmit="handleTaskFormSubmit(event)" class="space-y-4">
+        <input type="hidden" id="input-task-id" />
+
+        <!-- Title -->
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">Título del Recordatorio *</label>
+          <input type="text" id="input-task-title" required placeholder="Ej: Reunión con cliente / Tomar medicación" 
+                 class="w-full bg-dark-surface border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500" />
+        </div>
+
+        <!-- Date & Time Picker -->
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">Fecha y Hora *</label>
+          <input type="datetime-local" id="input-task-datetime" required 
+                 class="w-full bg-dark-surface border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-100 focus:outline-none focus:border-brand-500" />
+        </div>
+
+        <!-- Quick Time Adjusters -->
+        <div class="flex flex-wrap gap-2 pt-1">
+          <span class="text-xs text-slate-400 self-center mr-1">Rápido:</span>
+          <button type="button" onclick="setQuickTime(15)" class="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">+15 min</button>
+          <button type="button" onclick="setQuickTime(60)" class="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">+1 hora</button>
+          <button type="button" onclick="setQuickTimeTomorrow()" class="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">Mañana 09:00</button>
+        </div>
+
+        <!-- Grid Category & Priority -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Category -->
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">Categoría</label>
+            <select id="input-task-category" class="w-full bg-dark-surface border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-100 focus:outline-none focus:border-brand-500">
+              <option value="Trabajo">💼 Trabajo</option>
+              <option value="Personal">👤 Personal</option>
+              <option value="Salud">❤️ Salud & Fitness</option>
+              <option value="Finanzas">💳 Finanzas</option>
+              <option value="Estudio">📚 Estudio</option>
+              <option value="General">⚡ General</option>
+            </select>
+          </div>
+
+          <!-- Priority -->
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">Prioridad</label>
+            <select id="input-task-priority" class="w-full bg-dark-surface border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-100 focus:outline-none focus:border-brand-500">
+              <option value="alta">🔴 Alta / Urgente</option>
+              <option value="media" selected>🟡 Media</option>
+              <option value="baja">🟢 Baja</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Alarm Sound Effect Selector -->
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">Sonido de Alerta</label>
+          <div class="flex items-center gap-3">
+            <select id="input-task-sound" class="flex-1 bg-dark-surface border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-brand-500">
+              <option value="cyber">🔊 Chime Cyber (Recomendado)</option>
+              <option value="gentle">🔔 Melodía Suave</option>
+              <option value="pulse">⚡ Pulso de Urgencia</option>
+            </select>
+            <button type="button" onclick="testSoundPreview()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-cyan-400 border border-slate-700 flex items-center gap-1.5">
+              <i data-lucide="volume-2" class="w-4 h-4"></i> Probar
+            </button>
+          </div>
+        </div>
+
+        <!-- Notes / Description -->
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">Notas Adicionales</label>
+          <textarea id="input-task-notes" rows="2" placeholder="Detalles, enlaces o recordatorios secundarios..." 
+                    class="w-full bg-dark-surface border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500"></textarea>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+          <button type="button" onclick="toggleModal('modal-task', false)" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold">
+            Cancelar
+          </button>
+          <button type="submit" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-cyan-500 hover:from-brand-500 hover:to-cyan-400 text-white text-xs font-bold shadow-neon-indigo transition">
+            Guardar Recordatorio
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-pwa-info" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md hidden transition-all">
+    <div class="glass-panel w-full max-w-md rounded-3xl border border-slate-700 p-6 space-y-5 relative">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2">
+          <i data-lucide="smartphone" class="w-5 h-5 text-cyan-400"></i>
+          <h3 class="font-bold text-white text-base">Instalar sin App Store (PWA)</h3>
+        </div>
+        <button onclick="toggleModal('modal-pwa-info', false)" class="p-1 rounded-lg text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs text-slate-300 leading-relaxed">
+        <p class="font-medium text-slate-200">
+          Esta aplicación funciona como una <strong>PWA (Progressive Web App)</strong>. Puedes instalarla directamente en el escritorio de tu Android, Windows, Mac o iPhone sin necesidad de la Google Play Store ni App Store.
+        </p>
+
+        <div class="bg-dark-surface/80 p-3 rounded-xl border border-slate-800 space-y-2">
+          <p class="font-bold text-brand-400 flex items-center gap-1.5">
+            <i data-lucide="check-circle" class="w-4 h-4"></i> En Android / Chrome Desktop:
+          </p>
+          <p>Toca el botón <strong>"Instalar App"</strong> en el menú superior o abre los 3 puntos del navegador y selecciona <strong>"Agregar a pantalla principal"</strong> o <strong>"Instalar aplicación"</strong>.</p>
+        </div>
+
+        <div class="bg-dark-surface/80 p-3 rounded-xl border border-slate-800 space-y-2">
+          <p class="font-bold text-cyan-400 flex items-center gap-1.5">
+            <i data-lucide="bell-ring" class="w-4 h-4"></i> Notificaciones Dispositivo:
+          </p>
+          <p>Para recibir alarmas en tiempo real, asegúrate de presionar el botón <strong>"Activar Alerts"</strong> y dar permiso de Notificaciones en el navegador.</p>
+        </div>
+      </div>
+
+      <button onclick="toggleModal('modal-pwa-info', false)" class="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs">
+        ¡Entendido!
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================
+       1. GLOBAL STATE & PWA MANIFEST REGISTRATION
+       ========================================== */
+    let tasks = [];
+    let activeTab = 'today'; // 'today', 'upcoming', 'all'
+    let selectedCategory = 'all';
+    let selectedPriority = 'all';
+    let searchQuery = '';
+    let deferredPWAPrompt = null;
+    let calendarCurrentDate = new Date();
+
+    // Register dynamic PWA Web Manifest blob
+    (function registerDynamicManifest() {
+      const manifestData = {
+        name: "NEXUS Agenda & Recordatorios",
+        short_name: "NEXUS",
+        description: "Agenda interactiva futurista con notificaciones en vivo",
+        start_url: "./",
+        display: "standalone",
+        background_color: "#07090e",
+        theme_color: "#6366f1",
+        icons: [
+          {
+            src: "https://cdn-icons-png.flaticon.com/512/3652/3652191.png",
+            sizes: "512x512",
+            type: "image/png"
+          }
+        ]
+      };
+      const stringManifest = JSON.stringify(manifestData);
+      const blob = new Blob([stringManifest], { type: 'application/json' });
+      const manifestUrl = URL.createObjectURL(blob);
+      const link = document.createElement('link');
+      link.rel = 'manifest';
+      link.href = manifestUrl;
+      document.head.appendChild(link);
+    })();
+
+    /* ==========================================
+       2. INITIALIZATION & LIFECYCLE
+       ========================================== */
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      loadTasksFromStorage();
+      setupClock();
+      renderCategoryFilters();
+      renderMiniCalendar();
+      renderTasks();
+      updateStats();
+      checkNotificationStatus();
+
+      // Check for approaching alarms every 5 seconds
+      setInterval(checkAlarmTriggers, 5000);
+    });
+
+    // PWA Install prompt listener
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPWAPrompt = e;
+      const installBtn = document.getElementById('btn-install-pwa');
+      if (installBtn) installBtn.classList.remove('hidden');
+    });
+
+    function triggerPWAInstall() {
+      if (deferredPWAPrompt) {
+        deferredPWAPrompt.prompt();
+        deferredPWAPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            console.log('User accepted PWA installation');
+          }
+          deferredPWAPrompt = null;
+          document.getElementById('btn-install-pwa').classList.add('hidden');
+        });
+      } else {
+        toggleModal('modal-pwa-info', true);
+      }
+    }
+
+    /* ==========================================
+       3. REALTIME CLOCK & NOTIFICATIONS
+       ========================================== */
+    function setupClock() {
+      const update = () => {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const dateStr = now.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
+        
+        const clockEl = document.getElementById('live-clock');
+        const dateEl = document.getElementById('live-date');
+        if (clockEl) clockEl.textContent = timeStr;
+        if (dateEl) dateEl.textContent = dateStr;
+      };
+      update();
+      setInterval(update, 1000);
+    }
+
+    function checkNotificationStatus() {
+      const statusText = document.getElementById('notif-status-text');
+      const dot = document.getElementById('notif-dot');
+      const icon = document.getElementById('bell-icon');
+
+      if (!("Notification" in window)) {
+        if (statusText) statusText.textContent = "No Soportado";
+        return;
+      }
+
+      if (Notification.permission === "granted") {
+        if (statusText) statusText.textContent = "Alertas On";
+        if (dot) dot.classList.add('hidden');
+        if (icon) {
+          icon.classList.remove('text-amber-400');
+          icon.classList.add('text-emerald-400');
+        }
+      } else {
+        if (statusText) statusText.textContent = "Activar Alerts";
+        if (dot) dot.classList.remove('hidden');
+      }
+    }
+
+    function requestNotificationPermission() {
+      if (!("Notification" in window)) {
+        alert("Tu navegador no soporta notificaciones de escritorio.");
+        return;
+      }
+
+      Notification.requestPermission().then(permission => {
+        checkNotificationStatus();
+        if (permission === "granted") {
+          playSynthesizedSound('cyber');
+          new Notification("NEXUS Notificaciones Activadas", {
+            body: "¡Excelente! Ahora recibirás alertas en tiempo real de tus recordatorios.",
+            icon: "https://cdn-icons-png.flaticon.com/512/3652/3652191.png"
+          });
+        }
+      });
+    }
+
+    /* ==========================================
+       4. SYNTHESIZED SOUND EFFECTS (Web Audio API)
+       ========================================== */
+    function playSynthesizedSound(type = 'cyber') {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+
+        if (type === 'cyber') {
+          // Futuristic Arpeggio Chime
+          const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+          notes.forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            
+            gain.gain.setValueAtTime(0.15, ctx.currentTime + idx * 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.08 + 0.3);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(ctx.currentTime + idx * 0.08);
+            osc.stop(ctx.currentTime + idx * 0.08 + 0.35);
+          });
+        } else if (type === 'pulse') {
+          // Urgent Dual Tone
+          [440, 880].forEach((freq) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.4);
+          });
+        } else {
+          // Gentle Soft Bell
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(440, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.5);
+          gain.gain.setValueAtTime(0.2, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.6);
+        }
+      } catch (e) {
+        console.warn('Audio playback error:', e);
+      }
+    }
+
+    function testSoundPreview() {
+      const soundSelect = document.getElementById('input-task-sound');
+      const soundType = soundSelect ? soundSelect.value : 'cyber';
+      playSynthesizedSound(soundType);
+    }
+
+    /* ==========================================
+       5. DATA STORAGE & ALARM ENGINE
+       ========================================== */
+    function loadTasksFromStorage() {
+      const stored = localStorage.getItem('nexus_agenda_tasks');
+      if (stored) {
+        try {
+          tasks = JSON.parse(stored);
+        } catch (e) {
+          tasks = [];
+        }
+      }
+
+      // Default mock items if empty for immediate visual impact
+      if (!tasks || tasks.length === 0) {
+        const now = new Date();
+        const in30Min = new Date(now.getTime() + 30 * 60000);
+        const tomorrow = new Date(now.getTime() + 24 * 3600000);
+
+        tasks = [
+          {
+            id: 'demo-1',
+            title: '⚡ Probar Notificaciones de NEXUS',
+            datetime: in30Min.toISOString().slice(0, 16),
+            category: 'Trabajo',
+            priority: 'alta',
+            sound: 'cyber',
+            completed: false,
+            notes: 'Haz clic en "Activar Alerts" para recibir avisos automáticos.',
+            notified: false
+          },
+          {
+            id: 'demo-2',
+            title: '🏃‍♂️ Entrenamiento Funcional & Salud',
+            datetime: tomorrow.toISOString().slice(0, 16),
+            category: 'Salud',
+            priority: 'media',
+            sound: 'gentle',
+            completed: false,
+            notes: 'Rutina de cardio e hidratación.',
+            notified: false
+          }
+        ];
+        saveTasksToStorage();
+      }
+    }
+
+    function saveTasksToStorage() {
+      localStorage.setItem('nexus_agenda_tasks', JSON.stringify(tasks));
+      renderTasks();
+      updateStats();
+      renderMiniCalendar();
+    }
+
+    function checkAlarmTriggers() {
+      const now = new Date();
+      let hasUrgentSoon = false;
+
+      tasks.forEach(task => {
+        if (task.completed) return;
+
+        const taskDate = new Date(task.datetime);
+        const diffMs = taskDate.getTime() - now.getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+
+        // Check for urgent banner (< 15 mins)
+        if (diffMins >= 0 && diffMins <= 15) {
+          hasUrgentSoon = true;
+        }
+
+        // Trigger alarm if due now or past due & not notified yet
+        if (diffMs <= 0 && !task.notified) {
+          task.notified = true;
+          saveTasksToStorage();
+
+          // Play audio chime
+          playSynthesizedSound(task.sound || 'cyber');
+
+          // Trigger Desktop/Mobile Native Notification
+          if ("Notification" in window && Notification.permission === "granted") {
+            new Notification(`⏰ Recordatorio: ${task.title}`, {
+              body: `Categoría: ${task.category} | Prioridad: ${task.priority.toUpperCase()}\n${task.notes || ''}`,
+              icon: "https://cdn-icons-png.flaticon.com/512/3652/3652191.png",
+              tag: task.id
+            });
+          }
+        }
+      });
+
+      const banner = document.getElementById('urgent-alert-banner');
+      if (banner) {
+        if (hasUrgentSoon) banner.classList.remove('hidden');
+        else banner.classList.add('hidden');
+      }
+    }
+
+    function dismissUrgentBanner() {
+      const banner = document.getElementById('urgent-alert-banner');
+      if (banner) banner.classList.add('hidden');
+    }
+
+    /* ==========================================
+       6. RENDER TASKS & TIMELINE
+       ========================================== */
+    function renderTasks() {
+      const container = document.getElementById('tasks-container');
+      const emptyState = document.getElementById('empty-state');
+      if (!container) return;
+
+      const filtered = getFilteredTasks();
+
+      if (filtered.length === 0) {
+        container.innerHTML = '';
+        if (emptyState) emptyState.classList.remove('hidden');
+        return;
+      }
+
+      if (emptyState) emptyState.classList.add('hidden');
+
+      // Sort by date ascending
+      filtered.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+
+      container.innerHTML = filtered.map(task => {
+        const dateObj = new Date(task.datetime);
+        const formattedDate = dateObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+        const formattedTime = dateObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        
+        const isOverdue = !task.completed && dateObj < new Date();
+        const categoryBadge = getCategoryPill(task.category);
+        const priorityBadge = getPriorityPill(task.priority);
+
+        return `
+          <div class="glass-card rounded-2xl p-4 sm:p-5 transition-all duration-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${task.completed ? 'opacity-50 line-through' : ''} ${isOverdue ? 'border-l-4 border-l-rose-500' : 'border-l-4 border-l-brand-500'}">
+            
+            <!-- Left check & Details -->
+            <div class="flex items-start gap-3.5 flex-1 w-full">
+              <!-- Custom Checkbox -->
+              <button onclick="toggleTaskCompletion('${task.id}')" 
+                      class="mt-1 flex-shrink-0 w-6 h-6 rounded-lg border flex items-center justify-center transition-all ${task.completed ? 'bg-emerald-500 border-emerald-400 text-white' : 'border-slate-600 hover:border-brand-400 bg-dark-surface'}">
+                ${task.completed ? '<i data-lucide="check" class="w-4 h-4"></i>' : ''}
+              </button>
+
+              <div class="space-y-1.5 flex-1 min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h4 class="text-sm sm:text-base font-bold text-slate-100 ${task.completed ? 'line-through text-slate-400' : ''}">
+                    ${escapeHtml(task.title)}
+                  </h4>
+                  ${categoryBadge}
+                  ${priorityBadge}
+                  ${isOverdue ? '<span class="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30">Vencido</span>' : ''}
+                </div>
+
+                ${task.notes ? `<p class="text-xs text-slate-400 truncate">${escapeHtml(task.notes)}</p>` : ''}
+
+                <!-- Time info -->
+                <div class="flex items-center gap-3 text-xs text-slate-400 font-medium pt-1">
+                  <span class="flex items-center gap-1 text-cyan-300">
+                    <i data-lucide="calendar" class="w-3.5 h-3.5"></i> ${formattedDate}
+                  </span>
+                  <span class="flex items-center gap-1 text-brand-300">
+                    <i data-lucide="clock" class="w-3.5 h-3.5"></i> ${formattedTime}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Actions -->
+            <div class="flex items-center gap-1 sm:gap-2 self-end sm:self-center border-t sm:border-t-0 border-slate-800 pt-2 sm:pt-0 w-full sm:w-auto justify-end">
+              <!-- Play Chime Preview -->
+              <button onclick="playSynthesizedSound('${task.sound || 'cyber'}')" title="Probar alarma" class="p-2 rounded-xl text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition">
+                <i data-lucide="volume-2" class="w-4 h-4"></i>
+              </button>
+              
+              <!-- Edit Task -->
+              <button onclick="openTaskModal('${task.id}')" title="Editar" class="p-2 rounded-xl text-slate-400 hover:text-brand-400 hover:bg-slate-800 transition">
+                <i data-lucide="edit-3" class="w-4 h-4"></i>
+              </button>
+
+              <!-- Delete Task -->
+              <button onclick="deleteTask('${task.id}')" title="Eliminar" class="p-2 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    function getFilteredTasks() {
+      const now = new Date();
+      const todayStr = now.toISOString().slice(0, 10);
+
+      return tasks.filter(task => {
+        const taskDateStr = task.datetime.slice(0, 10);
+
+        // Tab Filtering
+        if (activeTab === 'today' && taskDateStr !== todayStr) return false;
+        if (activeTab === 'upcoming' && taskDateStr <= todayStr) return false;
+
+        // Category Filter
+        if (selectedCategory !== 'all' && task.category !== selectedCategory) return false;
+
+        // Priority Filter
+        if (selectedPriority !== 'all' && task.priority !== selectedPriority) return false;
+
+        // Search Filter
+        if (searchQuery.trim() !== '') {
+          const q = searchQuery.toLowerCase();
+          const matchTitle = task.title.toLowerCase().includes(q);
+          const matchNotes = (task.notes || '').toLowerCase().includes(q);
+          if (!matchTitle && !matchNotes) return false;
+        }
+
+        return true;
+      });
+    }
+
+    function getCategoryPill(cat) {
+      const colors = {
+        'Trabajo': 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+        'Personal': 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+        'Salud': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+        'Finanzas': 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+        'Estudio': 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+        'General': 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+      };
+      const cls = colors[cat] || colors['General'];
+      return `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md border ${cls}">${cat}</span>`;
+    }
+
+    function getPriorityPill(priority) {
+      if (priority === 'alta') {
+        return `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-400 border border-rose-500/20">Prioridad Alta</span>`;
+      } else if (priority === 'media') {
+        return `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20">Media</span>`;
+      }
+      return `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-500/10 text-slate-400 border border-slate-500/20">Baja</span>`;
+    }
+
+    /* ==========================================
+       7. STATS & CATEGORY SIDEBAR
+       ========================================== */
+    function updateStats() {
+      const now = new Date();
+      const todayStr = now.toISOString().slice(0, 10);
+      const todayTasks = tasks.filter(t => t.datetime.slice(0, 10) === todayStr);
+
+      const pending = todayTasks.filter(t => !t.completed).length;
+      const completed = todayTasks.filter(t => t.completed).length;
+      const total = todayTasks.length;
+
+      const rate = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+      document.getElementById('stat-pending-count').textContent = pending;
+      document.getElementById('stat-completed-count').textContent = completed;
+      document.getElementById('stats-completion-rate').textContent = `${rate}%`;
+      document.getElementById('stat-progress-text').textContent = `${completed} / ${total}`;
+      
+      const bar = document.getElementById('stat-progress-bar');
+      if (bar) bar.style.width = `${rate}%`;
+    }
+
+    function renderCategoryFilters() {
+      const categories = ['Trabajo', 'Personal', 'Salud', 'Finanzas', 'Estudio', 'General'];
+      const container = document.getElementById('category-filters-container');
+      if (!container) return;
+
+      let html = `
+        <button onclick="setCategoryFilter('all')" class="w-full flex items-center justify-between p-2 rounded-xl transition ${selectedCategory === 'all' ? 'bg-brand-600/20 text-brand-300 font-bold border border-brand-500/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'}">
+          <span class="flex items-center gap-2"><i data-lucide="grid" class="w-4 h-4"></i> Todas las categorías</span>
+          <span class="text-xs bg-slate-800 px-2 py-0.5 rounded-full">${tasks.length}</span>
+        </button>
+      `;
+
+      categories.forEach(cat => {
+        const count = tasks.filter(t => t.category === cat).length;
+        const isActive = selectedCategory === cat;
+        html += `
+          <button onclick="setCategoryFilter('${cat}')" class="w-full flex items-center justify-between p-2 rounded-xl transition ${isActive ? 'bg-brand-600/20 text-brand-300 font-bold border border-brand-500/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'}">
+            <span class="flex items-center gap-2">${cat}</span>
+            <span class="text-xs bg-slate-800 px-2 py-0.5 rounded-full">${count}</span>
+          </button>
+        `;
+      });
+
+      container.innerHTML = html;
+      lucide.createIcons();
+    }
+
+    function setCategoryFilter(cat) {
+      selectedCategory = cat;
+      renderCategoryFilters();
+      renderTasks();
+    }
+
+    function setPriorityFilter(pri) {
+      selectedPriority = pri;
+      document.querySelectorAll('.priority-btn').forEach(btn => {
+        if (btn.getAttribute('data-priority') === pri) {
+          btn.classList.add('bg-brand-600', 'text-white', 'border-brand-500');
+        } else {
+          btn.classList.remove('bg-brand-600', 'text-white', 'border-brand-500');
+        }
+      });
+      renderTasks();
+    }
+
+    function switchTab(tab) {
+      activeTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-brand-600', 'text-white', 'shadow-md');
+        btn.classList.add('text-slate-400');
+      });
+
+      const activeBtn = document.getElementById(`tab-${tab}`);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-brand-600', 'text-white', 'shadow-md');
+        activeBtn.classList.remove('text-slate-400');
+      }
+
+      renderTasks();
+    }
+
+    function onSearchChange() {
+      const input = document.getElementById('search-input');
+      searchQuery = input ? input.value : '';
+      renderTasks();
+    }
+
+    /* ==========================================
+       8. MINI CALENDAR INTERACTIVITY
+       ========================================== */
+    function renderMiniCalendar() {
+      const grid = document.getElementById('mini-calendar-grid');
+      const monthYearTitle = document.getElementById('calendar-month-year');
+      if (!grid || !monthYearTitle) return;
+
+      const year = calendarCurrentDate.getFullYear();
+      const month = calendarCurrentDate.getMonth();
+
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+      monthYearTitle.textContent = `${monthNames[month]} ${year}`;
+
+      grid.innerHTML = '';
+
+      // Blank slots before first day
+      for (let i = 0; i < firstDay; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.className = 'h-7';
+        grid.appendChild(emptyCell);
+      }
+
+      const today = new Date();
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const cellDate = new Date(year, month, day);
+        const cellDateStr = cellDate.toISOString().slice(0, 10);
+        
+        const isToday = cellDate.toDateString() === today.toDateString();
+        const hasTasks = tasks.some(t => t.datetime.slice(0, 10) === cellDateStr);
+
+        const btn = document.createElement('button');
+        btn.className = `h-7 rounded-lg text-center flex flex-col items-center justify-center font-medium transition ${
+          isToday 
+            ? 'bg-brand-600 text-white font-bold shadow-neon-indigo' 
+            : hasTasks 
+            ? 'bg-slate-800 text-cyan-300 font-semibold border border-cyan-500/30' 
+            : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+        }`;
+        
+        btn.innerHTML = `
+          <span>${day}</span>
+          ${hasTasks && !isToday ? '<span class="w-1 h-1 rounded-full bg-cyan-400 -mt-0.5"></span>' : ''}
+        `;
+
+        btn.onclick = () => {
+          searchQuery = cellDateStr;
+          const searchInput = document.getElementById('search-input');
+          if (searchInput) searchInput.value = cellDateStr;
+          switchTab('all');
+        };
+
+        grid.appendChild(btn);
+      }
+    }
+
+    function changeCalendarMonth(delta) {
+      calendarCurrentDate.setMonth(calendarCurrentDate.getMonth() + delta);
+      renderMiniCalendar();
+    }
+
+    /* ==========================================
+       9. CRUD TASK MODAL HANDLERS
+       ========================================== */
+    function openTaskModal(taskId = null) {
+      const modal = document.getElementById('modal-task');
+      const form = document.getElementById('form-task');
+      const modalTitle = document.getElementById('modal-task-title');
+
+      if (!modal || !form) return;
+
+      form.reset();
+
+      if (taskId) {
+        const task = tasks.find(t => t.id === taskId);
+        if (task) {
+          document.getElementById('input-task-id').value = task.id;
+          document.getElementById('input-task-title').value = task.title;
+          document.getElementById('input-task-datetime').value = task.datetime;
+          document.getElementById('input-task-category').value = task.category;
+          document.getElementById('input-task-priority').value = task.priority;
+          document.getElementById('input-task-sound').value = task.sound || 'cyber';
+          document.getElementById('input-task-notes').value = task.notes || '';
+          if (modalTitle) modalTitle.textContent = "Editar Recordatorio";
+        }
+      } else {
+        document.getElementById('input-task-id').value = '';
+        if (modalTitle) modalTitle.textContent = "Nuevo Recordatorio";
+        
+        // Default time to +30 mins from now
+        const defaultDate = new Date(Date.now() + 30 * 60000);
+        document.getElementById('input-task-datetime').value = defaultDate.toISOString().slice(0, 16);
+      }
+
+      toggleModal('modal-task', true);
+    }
+
+    function handleTaskFormSubmit(e) {
+      e.preventDefault();
+
+      const id = document.getElementById('input-task-id').value;
+      const title = document.getElementById('input-task-title').value;
+      const datetime = document.getElementById('input-task-datetime').value;
+      const category = document.getElementById('input-task-category').value;
+      const priority = document.getElementById('input-task-priority').value;
+      const sound = document.getElementById('input-task-sound').value;
+      const notes = document.getElementById('input-task-notes').value;
+
+      if (id) {
+        // Edit existing
+        const idx = tasks.findIndex(t => t.id === id);
+        if (idx !== -1) {
+          tasks[idx] = {
+            ...tasks[idx],
+            title,
+            datetime,
+            category,
+            priority,
+            sound,
+            notes,
+            notified: false
+          };
+        }
+      } else {
+        // Create new
+        const newTask = {
+          id: 'task-' + Date.now(),
+          title,
+          datetime,
+          category,
+          priority,
+          sound,
+          notes,
+          completed: false,
+          notified: false
+        };
+        tasks.push(newTask);
+      }
+
+      saveTasksToStorage();
+      renderCategoryFilters();
+      toggleModal('modal-task', false);
+      playSynthesizedSound(sound);
+    }
+
+    function toggleTaskCompletion(id) {
+      const task = tasks.find(t => t.id === id);
+      if (task) {
+        task.completed = !task.completed;
+        saveTasksToStorage();
+
+        if (task.completed && typeof confetti === 'function') {
+          confetti({
+            particleCount: 80,
+            spread: 60,
+            origin: { y: 0.8 },
+            colors: ['#6366f1', '#00f0ff', '#10b981']
+          });
+        }
+      }
+    }
+
+    function deleteTask(id) {
+      if (confirm('¿Estás seguro de que deseas eliminar este recordatorio?')) {
+        tasks = tasks.filter(t => t.id !== id);
+        saveTasksToStorage();
+        renderCategoryFilters();
+      }
+    }
+
+    function setQuickTime(minutes) {
+      const datetimeInput = document.getElementById('input-task-datetime');
+      if (!datetimeInput) return;
+      const d = new Date(Date.now() + minutes * 60000);
+      datetimeInput.value = d.toISOString().slice(0, 16);
+    }
+
+    function setQuickTimeTomorrow() {
+      const datetimeInput = document.getElementById('input-task-datetime');
+      if (!datetimeInput) return;
+      const d = new Date();
+      d.setDate(d.getDate() + 1);
+      d.setHours(9, 0, 0, 0);
+      datetimeInput.value = d.toISOString().slice(0, 16);
+    }
+
+    function toggleModal(modalId, show) {
+      const modal = document.getElementById(modalId);
+      if (!modal) return;
+
+      const content = modal.children[0];
+
+      if (show) {
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+          if (content) {
+            content.classList.remove('scale-95', 'opacity-0');
+            content.classList.add('scale-100', 'opacity-100');
+          }
+        }, 10);
+      } else {
+        if (content) {
+          content.classList.remove('scale-100', 'opacity-100');
+          content.classList.add('scale-95', 'opacity-0');
+        }
+        setTimeout(() => {
+          modal.classList.add('hidden');
+        }, 200);
+      }
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, function(m) {
+        return {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#039;'
+        }[m];
+      });
+    }
+  </script>
+</body>
+</html>
